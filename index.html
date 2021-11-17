@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISS Location Map</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <style>
+        #map {
+            height: 100%;
+            }
+
+            /* Optional: Makes the sample page fill the window. */
+            html,
+            body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+     <!-- Async script executes immediately and must be after any DOM elements used in callback. -->
+     <script
+     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD9J7CDhi47z7kRpvfZLkHSVZ_W7C1yCyw&callback=initMap&v=weekly"
+     async
+   ></script>
+    
+</body>
+    <script>
+        // Create WebSocket connection.
+        const socket = new WebSocket('ws://localhost:3000');
+
+        // Connection opened
+        socket.addEventListener('open', function (event) {
+            console.log('Connected to web socket server')
+            sendSms();
+        });
+
+        // Listen for messages
+        socket.addEventListener('message', function (event) {
+            getIssPosition();
+        });
+
+        function sendSms() {
+            socket.send('Ping location');
+        }
+
+        let map;
+        let myLatLng = { lat: 0, lng: -180 };
+        const flightPlanCoordinates = [];
+
+        function getIssPosition() {
+           fetch('https://api.wheretheiss.at/v1/satellites/25544')
+           .then(response => {
+               return response.json()
+           })
+           .then(issData => {
+               if(issData) {
+                myLatLng = { lat: issData.latitude, lng: issData.longitude}
+                // new google.maps.Marker({
+                //     position: myLatLng,
+                //     map,
+                //     icon: {
+                //         path: google.maps.SymbolPath.CIRCLE,
+                //         scale: 1,
+                //     },
+                //     title: "Hello World!",
+                // });
+                flightPlanCoordinates.push(myLatLng);
+                plotPath();
+               }
+           })
+           .catch(error => {
+               console.log(error);
+           })
+        }
+
+        function initMap() {
+            console.log(myLatLng);
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 3,
+                center: myLatLng,
+                mapTypeId: "terrain",
+            });
+        }
+        const lineSymbol = {
+            path: "M 0,-1 0,1",
+            strokeOpacity: 1,
+            scale: 3,
+        };
+
+        function plotPath() {
+            const flightPath = new google.maps.Polyline({
+                path: flightPlanCoordinates,
+                geodesic: true,
+                strokeColor: "#FF0000",
+                strokeOpacity: 0,
+                icons: [
+                    {
+                        icon: lineSymbol,
+                        offset: "0",
+                        repeat: "10px",
+                    },
+                ],
+                map: map
+            });
+        }
+    </script>
+</html>
