@@ -13,10 +13,12 @@ wss.on('connection', function connection(ws) {
 
 
     ws.on('message', function incoming(message) {
-            setInterval(() => {
-                ws.send(Date.now());
-            }, 5000);
-        });
+        console.log('Message info: from frontend ::: ', message);
+    });
+
+    setInterval(() => {
+        ws.send(Date.now());
+    }, 5000);
   });
 
 
